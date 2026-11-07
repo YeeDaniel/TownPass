@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "stationId": "taipei_main_station",
+  "stationNames": {
+    "zh-TW": "臺北車站",
+    "en": "Taipei Main Station"
+  },
+  "documents": [
+    {
+      "path": "051.pdf",
+      "sourceUrl": "https://web.metro.taipei/img/ALL/INFOPDF/051.pdf",
+      "notes": "The PDF contains one raster map per page and no extractable text layer.",
+      "pages": [
+        { "page": 1, "floorId": "B1", "label": "地下一層" },
+        { "page": 2, "floorId": "B2", "label": "地下二層" },
+        { "page": 3, "floorId": "B3", "label": "地下三層" },
+        { "page": 4, "floorId": "B4", "label": "地下四層" }
+      ]
+    }
+  ],
+  "annotations": "051.annotations.json"
+}

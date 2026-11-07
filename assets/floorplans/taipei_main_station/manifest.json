@@ -1,0 +1,644 @@
+{
+  "schemaVersion": 1,
+  "stationId": "taipei_main_station",
+  "stationNames": {
+    "zh-TW": "臺北車站",
+    "en": "Taipei Main Station"
+  },
+  "coordinateSystem": {
+    "type": "normalized-image",
+    "origin": "top-left",
+    "xRange": [
+      0.0,
+      1.0
+    ],
+    "yRange": [
+      0.0,
+      1.0
+    ]
+  },
+  "reviewStatus": "prototype-needs-on-site-validation",
+  "costUnit": "relative",
+  "sources": [
+    {
+      "file": "051.pdf",
+      "sha256": "c3968d2d0410ac2751e6fdaea2e3939c9f482a7d32645c696cf08970c9b8ca36",
+      "sourceUrl": "https://web.metro.taipei/img/ALL/INFOPDF/051.pdf",
+      "notes": "The PDF contains one raster map per page and no extractable text layer."
+    }
+  ],
+  "floors": [
+    {
+      "id": "B1",
+      "label": "地下一層",
+      "source": {
+        "pdf": "051.pdf",
+        "page": 1
+      },
+      "image": "assets/floorplans/taipei_main_station/b1.png",
+      "walkableMask": "assets/floorplans/taipei_main_station/b1_walkable_mask.png",
+      "width": 1440,
+      "height": 1548
+    },
+    {
+      "id": "B2",
+      "label": "地下二層",
+      "source": {
+        "pdf": "051.pdf",
+        "page": 2
+      },
+      "image": "assets/floorplans/taipei_main_station/b2.png",
+      "walkableMask": "assets/floorplans/taipei_main_station/b2_walkable_mask.png",
+      "width": 1440,
+      "height": 1548
+    },
+    {
+      "id": "B3",
+      "label": "地下三層",
+      "source": {
+        "pdf": "051.pdf",
+        "page": 3
+      },
+      "image": "assets/floorplans/taipei_main_station/b3.png",
+      "walkableMask": "assets/floorplans/taipei_main_station/b3_walkable_mask.png",
+      "width": 1440,
+      "height": 1548
+    },
+    {
+      "id": "B4",
+      "label": "地下四層",
+      "source": {
+        "pdf": "051.pdf",
+        "page": 4
+      },
+      "image": "assets/floorplans/taipei_main_station/b4.png",
+      "walkableMask": "assets/floorplans/taipei_main_station/b4_walkable_mask.png",
+      "width": 1440,
+      "height": 1548
+    }
+  ],
+  "nodes": [
+    {
+      "id": "b1_m4_entry",
+      "floorId": "B1",
+      "kind": "entrance",
+      "position": {
+        "x": 0.486,
+        "y": 0.795
+      },
+      "names": {
+        "zh-TW": "M4 出入口",
+        "en": "Exit M4"
+      },
+      "tags": [
+        "exit",
+        "demo-start"
+      ],
+      "verified": false,
+      "pixelPosition": {
+        "x": 700,
+        "y": 1231
+      }
+    },
+    {
+      "id": "b1_m4_stairs",
+      "floorId": "B1",
+      "kind": "stairs",
+      "position": {
+        "x": 0.524,
+        "y": 0.801
+      },
+      "names": {
+        "zh-TW": "M4 樓梯",
+        "en": "M4 stairs"
+      },
+      "tags": [
+        "vertical-connector"
+      ],
+      "verified": false,
+      "pixelPosition": {
+        "x": 755,
+        "y": 1240
+      }
+    },
+    {
+      "id": "b1_m4_elevator",
+      "floorId": "B1",
+      "kind": "elevator",
+      "position": {
+        "x": 0.546,
+        "y": 0.772
+      },
+      "names": {
+        "zh-TW": "M4 附近電梯",
+        "en": "Elevator near M4"
+      },
+      "tags": [
+        "vertical-connector",
+        "accessible"
+      ],
+      "verified": false,
+      "pixelPosition": {
+        "x": 786,
+        "y": 1195
+      }
+    },
+    {
+      "id": "b2_m4_stairs",
+      "floorId": "B2",
+      "kind": "stairs",
+      "position": {
+        "x": 0.469,
+        "y": 0.849
+      },
+      "names": {
+        "zh-TW": "M4／M6 樓梯",
+        "en": "M4/M6 stairs"
+      },
+      "tags": [
+        "vertical-connector"
+      ],
+      "verified": false,
+      "pixelPosition": {
+        "x": 675,
+        "y": 1314
+      }
+    },
+    {
+      "id": "b2_m4_elevator",
+      "floorId": "B2",
+      "kind": "elevator",
+      "position": {
+        "x": 0.427,
+        "y": 0.807
+      },
+      "names": {
+        "zh-TW": "M4／M6 附近電梯",
+        "en": "Elevator near M4/M6"
+      },
+      "tags": [
+        "vertical-connector",
+        "accessible"
+      ],
+      "verified": false,
+      "pixelPosition": {
+        "x": 615,
+        "y": 1249
+      }
+    },
+    {
+      "id": "b2_concourse_center",
+      "floorId": "B2",
+      "kind": "junction",
+      "position": {
+        "x": 0.635,
+        "y": 0.837
+      },
+      "names": {
+        "zh-TW": "B2 穿堂層中央",
+        "en": "B2 central concourse"
+      },
+      "tags": [
+        "junction"
+      ],
+      "verified": false,
+      "pixelPosition": {
+        "x": 914,
+        "y": 1296
+      }
+    },
+    {
+      "id": "b2_bl_transfer",
+      "floorId": "B2",
+      "kind": "elevator",
+      "position": {
+        "x": 0.622,
+        "y": 0.858
+      },
+      "names": {
+        "zh-TW": "板南線轉乘電梯",
+        "en": "Bannan Line transfer elevator"
+      },
+      "tags": [
+        "vertical-connector",
+        "accessible",
+        "bannan-line"
+      ],
+      "verified": false,
+      "pixelPosition": {
+        "x": 896,
+        "y": 1328
+      }
+    },
+    {
+      "id": "b2_r_transfer",
+      "floorId": "B2",
+      "kind": "junction",
+      "position": {
+        "x": 0.701,
+        "y": 0.687
+      },
+      "names": {
+        "zh-TW": "淡水信義線轉乘通道",
+        "en": "Tamsui-Xinyi Line transfer passage"
+      },
+      "tags": [
+        "junction",
+        "tamsui-xinyi-line"
+      ],
+      "verified": false,
+      "pixelPosition": {
+        "x": 1009,
+        "y": 1063
+      }
+    },
+    {
+      "id": "b3_bl_platform",
+      "floorId": "B3",
+      "kind": "platform",
+      "position": {
+        "x": 0.628,
+        "y": 0.9
+      },
+      "names": {
+        "zh-TW": "板南線月台",
+        "en": "Bannan Line platform"
+      },
+      "tags": [
+        "destination",
+        "bannan-line"
+      ],
+      "verified": false,
+      "pixelPosition": {
+        "x": 904,
+        "y": 1393
+      }
+    },
+    {
+      "id": "b3_r_concourse_south",
+      "floorId": "B3",
+      "kind": "junction",
+      "position": {
+        "x": 0.704,
+        "y": 0.691
+      },
+      "names": {
+        "zh-TW": "淡水信義線穿堂層南側",
+        "en": "Tamsui-Xinyi concourse south"
+      },
+      "tags": [
+        "junction",
+        "tamsui-xinyi-line"
+      ],
+      "verified": false,
+      "pixelPosition": {
+        "x": 1014,
+        "y": 1070
+      }
+    },
+    {
+      "id": "b3_r_concourse_center",
+      "floorId": "B3",
+      "kind": "junction",
+      "position": {
+        "x": 0.721,
+        "y": 0.513
+      },
+      "names": {
+        "zh-TW": "淡水信義線穿堂層中央",
+        "en": "Tamsui-Xinyi central concourse"
+      },
+      "tags": [
+        "junction",
+        "tamsui-xinyi-line"
+      ],
+      "verified": false,
+      "pixelPosition": {
+        "x": 1038,
+        "y": 794
+      }
+    },
+    {
+      "id": "b3_r_elevator",
+      "floorId": "B3",
+      "kind": "elevator",
+      "position": {
+        "x": 0.737,
+        "y": 0.445
+      },
+      "names": {
+        "zh-TW": "淡水信義線月台電梯",
+        "en": "Tamsui-Xinyi platform elevator"
+      },
+      "tags": [
+        "vertical-connector",
+        "accessible",
+        "tamsui-xinyi-line"
+      ],
+      "verified": false,
+      "pixelPosition": {
+        "x": 1061,
+        "y": 689
+      }
+    },
+    {
+      "id": "b3_r_stairs",
+      "floorId": "B3",
+      "kind": "stairs",
+      "position": {
+        "x": 0.748,
+        "y": 0.508
+      },
+      "names": {
+        "zh-TW": "淡水信義線月台樓梯",
+        "en": "Tamsui-Xinyi platform stairs"
+      },
+      "tags": [
+        "vertical-connector",
+        "tamsui-xinyi-line"
+      ],
+      "verified": false,
+      "pixelPosition": {
+        "x": 1077,
+        "y": 786
+      }
+    },
+    {
+      "id": "b4_r_elevator",
+      "floorId": "B4",
+      "kind": "elevator",
+      "position": {
+        "x": 0.719,
+        "y": 0.707
+      },
+      "names": {
+        "zh-TW": "淡水信義線月台電梯",
+        "en": "Tamsui-Xinyi platform elevator"
+      },
+      "tags": [
+        "vertical-connector",
+        "accessible",
+        "tamsui-xinyi-line"
+      ],
+      "verified": false,
+      "pixelPosition": {
+        "x": 1035,
+        "y": 1094
+      }
+    },
+    {
+      "id": "b4_r_stairs",
+      "floorId": "B4",
+      "kind": "stairs",
+      "position": {
+        "x": 0.733,
+        "y": 0.651
+      },
+      "names": {
+        "zh-TW": "淡水信義線月台樓梯",
+        "en": "Tamsui-Xinyi platform stairs"
+      },
+      "tags": [
+        "vertical-connector",
+        "tamsui-xinyi-line"
+      ],
+      "verified": false,
+      "pixelPosition": {
+        "x": 1056,
+        "y": 1008
+      }
+    },
+    {
+      "id": "b4_r_platform",
+      "floorId": "B4",
+      "kind": "platform",
+      "position": {
+        "x": 0.735,
+        "y": 0.548
+      },
+      "names": {
+        "zh-TW": "淡水信義線月台",
+        "en": "Tamsui-Xinyi Line platform"
+      },
+      "tags": [
+        "destination",
+        "tamsui-xinyi-line"
+      ],
+      "verified": false,
+      "pixelPosition": {
+        "x": 1058,
+        "y": 848
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e01",
+      "from": "b1_m4_entry",
+      "to": "b1_m4_stairs",
+      "kind": "corridor",
+      "cost": 1.0,
+      "accessible": true,
+      "bidirectional": true,
+      "verified": false
+    },
+    {
+      "id": "e02",
+      "from": "b1_m4_entry",
+      "to": "b1_m4_elevator",
+      "kind": "corridor",
+      "cost": 1.3,
+      "accessible": true,
+      "bidirectional": true,
+      "verified": false
+    },
+    {
+      "id": "e03",
+      "from": "b1_m4_stairs",
+      "to": "b2_m4_stairs",
+      "kind": "stairs",
+      "cost": 1.0,
+      "accessible": false,
+      "bidirectional": true,
+      "verified": false
+    },
+    {
+      "id": "e04",
+      "from": "b1_m4_elevator",
+      "to": "b2_m4_elevator",
+      "kind": "elevator",
+      "cost": 1.5,
+      "accessible": true,
+      "bidirectional": true,
+      "verified": false
+    },
+    {
+      "id": "e05",
+      "from": "b2_m4_stairs",
+      "to": "b2_concourse_center",
+      "kind": "corridor",
+      "cost": 1.8,
+      "accessible": true,
+      "bidirectional": true,
+      "verified": false
+    },
+    {
+      "id": "e06",
+      "from": "b2_m4_elevator",
+      "to": "b2_concourse_center",
+      "kind": "corridor",
+      "cost": 2.0,
+      "accessible": true,
+      "bidirectional": true,
+      "verified": false
+    },
+    {
+      "id": "e07",
+      "from": "b2_concourse_center",
+      "to": "b2_bl_transfer",
+      "kind": "corridor",
+      "cost": 0.7,
+      "accessible": true,
+      "bidirectional": true,
+      "verified": false
+    },
+    {
+      "id": "e08",
+      "from": "b2_bl_transfer",
+      "to": "b3_bl_platform",
+      "kind": "elevator",
+      "cost": 1.5,
+      "accessible": true,
+      "bidirectional": true,
+      "verified": false
+    },
+    {
+      "id": "e09",
+      "from": "b2_concourse_center",
+      "to": "b2_r_transfer",
+      "kind": "corridor",
+      "cost": 2.0,
+      "accessible": true,
+      "bidirectional": true,
+      "verified": false
+    },
+    {
+      "id": "e10",
+      "from": "b2_r_transfer",
+      "to": "b3_r_concourse_south",
+      "kind": "escalator",
+      "cost": 1.4,
+      "accessible": false,
+      "bidirectional": true,
+      "verified": false
+    },
+    {
+      "id": "e11",
+      "from": "b2_r_transfer",
+      "to": "b3_r_concourse_south",
+      "kind": "elevator",
+      "cost": 1.8,
+      "accessible": true,
+      "bidirectional": true,
+      "verified": false
+    },
+    {
+      "id": "e12",
+      "from": "b3_r_concourse_south",
+      "to": "b3_r_concourse_center",
+      "kind": "corridor",
+      "cost": 1.8,
+      "accessible": true,
+      "bidirectional": true,
+      "verified": false
+    },
+    {
+      "id": "e13",
+      "from": "b3_r_concourse_center",
+      "to": "b3_r_stairs",
+      "kind": "corridor",
+      "cost": 0.4,
+      "accessible": true,
+      "bidirectional": true,
+      "verified": false
+    },
+    {
+      "id": "e14",
+      "from": "b3_r_concourse_center",
+      "to": "b3_r_elevator",
+      "kind": "corridor",
+      "cost": 0.8,
+      "accessible": true,
+      "bidirectional": true,
+      "verified": false
+    },
+    {
+      "id": "e15",
+      "from": "b3_r_stairs",
+      "to": "b4_r_stairs",
+      "kind": "stairs",
+      "cost": 1.0,
+      "accessible": false,
+      "bidirectional": true,
+      "verified": false
+    },
+    {
+      "id": "e16",
+      "from": "b3_r_elevator",
+      "to": "b4_r_elevator",
+      "kind": "elevator",
+      "cost": 1.4,
+      "accessible": true,
+      "bidirectional": true,
+      "verified": false
+    },
+    {
+      "id": "e17",
+      "from": "b4_r_stairs",
+      "to": "b4_r_platform",
+      "kind": "platform",
+      "cost": 0.8,
+      "accessible": true,
+      "bidirectional": true,
+      "verified": false
+    },
+    {
+      "id": "e18",
+      "from": "b4_r_elevator",
+      "to": "b4_r_platform",
+      "kind": "platform",
+      "cost": 0.9,
+      "accessible": true,
+      "bidirectional": true,
+      "verified": false
+    }
+  ],
+  "destinations": [
+    {
+      "id": "bannan_line_platform",
+      "nodeId": "b3_bl_platform",
+      "names": {
+        "zh-TW": "捷運板南線月台",
+        "en": "Bannan Line platform"
+      },
+      "aliases": [
+        "BL",
+        "BL12",
+        "藍線"
+      ]
+    },
+    {
+      "id": "tamsui_xinyi_line_platform",
+      "nodeId": "b4_r_platform",
+      "names": {
+        "zh-TW": "捷運淡水信義線月台",
+        "en": "Tamsui-Xinyi Line platform"
+      },
+      "aliases": [
+        "R",
+        "R10",
+        "紅線"
+      ]
+    }
+  ]
+}

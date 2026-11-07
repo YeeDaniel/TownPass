@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="臺北車站 B1–B4 樓層圖 2D／3D 資料模型檢視器"
+    />
+    <title>臺北車站｜樓層模型檢視器</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand-block">
+          <div class="brand-mark" aria-hidden="true">TP</div>
+          <div>
+            <p class="eyebrow">TOWN PASS · SPATIAL DATA LAB</p>
+            <h1>臺北車站樓層模型</h1>
+          </div>
+        </div>
+
+        <div class="topbar-actions">
+          <div class="segmented" aria-label="檢視模式">
+            <button class="mode-button" data-mode="2d" type="button" aria-pressed="false">
+              2D 平面
+            </button>
+            <button class="mode-button" data-mode="3d" type="button" aria-pressed="false">
+              3D 分層
+            </button>
+          </div>
+          <button id="resetView" class="ghost-button" type="button">重設視角</button>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <aside class="control-panel" aria-label="地圖控制">
+          <section class="panel-section summary-section">
+            <div class="section-heading">
+              <div>
+                <p class="section-kicker">DATASET</p>
+                <h2 id="stationName">載入中…</h2>
+              </div>
+              <span id="dataStatus" class="status-pill">讀取中</span>
+            </div>
+            <dl class="summary-grid">
+              <div><dt>樓層</dt><dd id="floorCount">—</dd></div>
+              <div><dt>節點</dt><dd id="nodeCount">—</dd></div>
+              <div><dt>設施</dt><dd id="facilityCount">—</dd></div>
+            </dl>
+          </section>
+
+          <section class="panel-section">
+            <div class="section-heading compact">
+              <div>
+                <p class="section-kicker">FLOORS</p>
+                <h2>樓層</h2>
+              </div>
+            </div>
+            <div id="floorButtons" class="floor-buttons" aria-label="選擇樓層"></div>
+            <p id="floorHelp" class="control-help">2D 模式一次檢視一個樓層。</p>
+          </section>
+
+          <section class="panel-section">
+            <div class="section-heading compact">
+              <div>
+                <p class="section-kicker">LAYERS</p>
+                <h2>圖層</h2>
+              </div>
+            </div>
+            <div class="toggle-list">
+              <label class="toggle-row">
+                <span><b>原始底圖</b><small>官方 PDF 抽出的 PNG</small></span>
+                <input id="showBase" type="checkbox" checked />
+              </label>
+              <label class="toggle-row">
+                <span><b>可通行區</b><small>黃色區域色彩遮罩</small></span>
+                <input id="showMask" type="checkbox" checked />
+              </label>
+              <label class="toggle-row">
+                <span><b>語意節點</b><small>出入口、電梯、樓梯與月台</small></span>
+                <input id="showNodes" type="checkbox" checked />
+              </label>
+              <label class="toggle-row">
+                <span><b>節點名稱</b><small>來自 manifest.json</small></span>
+                <input id="showLabels" type="checkbox" />
+              </label>
+            </div>
+
+            <label class="range-control" for="baseOpacity">
+              <span><b>底圖透明度</b><output id="baseOpacityValue">92%</output></span>
+              <input id="baseOpacity" type="range" min="15" max="100" value="92" />
+            </label>
+
+            <label id="spacingControl" class="range-control is-hidden" for="floorSpacing">
+              <span><b>樓層間距</b><output id="floorSpacingValue">112</output></span>
+              <input id="floorSpacing" type="range" min="40" max="220" value="112" />
+            </label>
+          </section>
+
+          <section class="panel-section legend-section">
+            <div class="section-heading compact">
+              <div>
+                <p class="section-kicker">SEMANTICS</p>
+                <h2>節點圖例</h2>
+              </div>
+            </div>
+            <div id="legend" class="legend"></div>
+          </section>
+
+          <section id="nodeInspector" class="panel-section inspector-section" aria-live="polite">
+            <p class="section-kicker">INSPECTOR</p>
+            <p class="empty-inspector">點選地圖上的節點查看資料。</p>
+          </section>
+        </aside>
+
+        <section class="viewport-panel" aria-label="樓層模型">
+          <div class="viewport-header">
+            <div>
+              <p id="viewEyebrow" class="section-kicker">2D FLOOR PLAN</p>
+              <h2 id="viewTitle">B1 · 地下一層</h2>
+            </div>
+            <div class="interaction-help">
+              <span><i class="mouse-icon"></i>拖曳</span>
+              <span><i class="wheel-icon"></i>滾輪縮放</span>
+            </div>
+          </div>
+
+          <div id="scene" class="scene mode-2d" tabindex="0">
+            <div class="grid-floor" aria-hidden="true"></div>
+            <div id="world" class="world"></div>
+            <div id="loadingState" class="loading-state">
+              <span class="loading-spinner"></span>
+              <p>正在讀取地圖模型…</p>
+            </div>
+            <div id="errorState" class="error-state is-hidden" role="alert"></div>
+            <div class="axis-widget" aria-hidden="true">
+              <span class="axis-z">Z</span>
+              <span class="axis-x">X</span>
+              <span class="axis-y">Y</span>
+            </div>
+            <div class="prototype-note">
+              <span class="pulse-dot"></span>
+              目前為分層資料模型，非測量級 BIM
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="./app.js" defer></script>
+  </body>
+</html>

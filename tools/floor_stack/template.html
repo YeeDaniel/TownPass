@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>北車四層疊圖</title>
+<style>
+  :root { --bg:#eceff3; --panel:#ffffff; --ink:#1d2330; --muted:#667085; --line:#d7dce3; --route:#e4572e; --elev:#1f6fd1; --chip:#f2f4f7; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; height:100%; background:var(--bg); color:var(--ink);
+    font-family:"Noto Sans TC","Microsoft JhengHei","PingFang TC",system-ui,sans-serif; }
+  #wrap { display:flex; height:100%; }
+  #side { width:270px; flex:none; padding:20px 18px; background:var(--panel); border-right:1px solid var(--line); overflow:auto; }
+  #stage { flex:1; position:relative; min-height:0; }
+  canvas { position:absolute; inset:0; width:100%; height:100%; display:block; }
+  h1 { font-size:18px; margin:0 0 4px; }
+  .sub { font-size:12px; color:var(--muted); margin:0 0 18px; line-height:1.6; }
+  .group { margin-bottom:18px; transition:opacity .3s; }
+  .group.muted { opacity:.38; pointer-events:none; }
+  .label { font-size:12px; color:var(--muted); margin-bottom:6px; display:flex; justify-content:space-between; }
+  .chips { display:flex; flex-wrap:wrap; gap:6px; }
+  .chips button { border:1px solid var(--line); background:var(--chip); color:var(--ink); padding:5px 11px; border-radius:999px; font:inherit; font-size:13px; cursor:pointer; }
+  .chips button[aria-pressed="true"] { background:var(--ink); color:#fff; border-color:var(--ink); }
+  .stepper { display:flex; align-items:center; gap:8px; }
+  .stepper button { width:42px; height:36px; border-radius:8px; border:1px solid var(--line); background:var(--chip); color:var(--ink); font-size:14px; cursor:pointer; }
+  .stepper button:disabled { opacity:.35; cursor:default; }
+  .stepper span { flex:1; text-align:center; font-size:13px; }
+  input[type=range] { width:100%; }
+  .check { display:flex; align-items:center; gap:8px; font-size:13px; margin:6px 0; cursor:pointer; }
+  .btn { width:100%; padding:9px; border-radius:8px; border:1px solid var(--ink); background:var(--ink); color:#fff; font:inherit; font-size:14px; cursor:pointer; }
+  .legend { font-size:12px; color:var(--muted); line-height:1.9; }
+  .sw { display:inline-block; width:18px; height:4px; border-radius:2px; vertical-align:middle; margin-right:6px; }
+  .note { font-size:11px; color:var(--muted); line-height:1.6; border-top:1px solid var(--line); padding-top:12px; }
+  #caption { position:absolute; top:16px; left:50%; transform:translate(-50%,-8px); width:max-content; max-width:min(560px, calc(100% - 32px));
+    display:flex; align-items:center; gap:12px; padding:10px 16px 10px 10px; background:#fff; border:1px solid var(--line); border-radius:12px;
+    box-shadow:0 6px 20px rgba(20,30,50,.12); opacity:0; transition:opacity .3s, transform .3s; pointer-events:none; }
+  #caption.show { opacity:1; transform:translate(-50%,0); }
+  #capFloor { flex:none; background:var(--ink); color:#fff; font-weight:700; font-size:16px; border-radius:8px; padding:6px 10px; }
+  #capText { font-size:15px; line-height:1.5; }
+  @media (max-width:720px) {
+    #wrap { flex-direction:column; height:auto; }
+    #side { width:auto; border-right:0; border-bottom:1px solid var(--line); padding:16px; }
+    #stage { flex:none; height:min(80vh, 130vw); }
+  }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <aside id="side">
+    <h1>北車 B1–B4 疊圖</h1>
+    <p class="sub">總覽看全部樓層怎麼串；點一層（或用 ◀ ▶、方向鍵）進入單層平面，只看那一層的路線。Esc 回總覽。</p>
+
+    <div class="group">
+      <div class="label">沿路線逐層看</div>
+      <div class="stepper"><button id="prev" aria-label="上一層">◀</button><span id="stepLabel">總覽</span><button id="next" aria-label="下一層">▶</button></div>
+    </div>
+
+    <div class="group">
+      <div class="label">樓層</div>
+      <div class="chips" id="chips">
+        <button data-f="-1" aria-pressed="true">總覽</button>
+        <button data-f="0">B1</button><button data-f="1">B2</button><button data-f="2">B3</button><button data-f="3">B4</button>
+      </div>
+    </div>
+
+    <div id="sliders" class="group">
+      <div class="group"><div class="label"><span>層距</span><span id="vGap"></span></div><input id="gap" type="range" min="0" max="700" value="380"></div>
+      <div class="group"><div class="label"><span>傾斜</span><span id="vTilt"></span></div><input id="tilt" type="range" min="20" max="100" value="46"></div>
+      <div class="group" style="margin-bottom:0"><div class="label"><span>旋轉</span><span id="vRot"></span></div><input id="rot" type="range" min="-60" max="60" value="-24"></div>
+    </div>
+
+    <div class="group">
+      <label class="check"><input type="checkbox" id="showElev" checked>電梯連線（同編號跨層）</label>
+      <label class="check"><input type="checkbox" id="showRoute" checked>示範路線 B1 → B4</label>
+      <label class="check"><input type="checkbox" id="alignB1" checked>B1 用電梯估算對齊</label>
+    </div>
+
+    <div class="group"><button class="btn" id="play">播放展開動畫</button></div>
+
+    <div class="group legend">
+      <div><span class="sw" style="background:var(--route)"></span>示範路線：南一門 → 電梯 4 → B2 板南線大廳 → 電梯 1 → B4 淡水信義線月台</div>
+      <div><span class="sw" style="background:var(--elev)"></span>無障礙電梯（數字為圖上編號）</div>
+    </div>
+
+    <p class="note">路線與說明文字是示意，不是實際資料。B2–B4 以電梯 1、2、6 平移對齊；B1 畫法比例不同（約 1.24 倍），用電梯 3、4、7 與板南線大廳兩端估算，誤差約 30–70px，所以部分連線會略斜。圖資來源：臺北捷運台北車站資訊圖，授權待確認，僅供內部討論。</p>
+  </aside>
+  <main id="stage">
+    <canvas id="cv"></canvas>
+    <div id="caption"><div id="capFloor"></div><div id="capText"></div></div>
+  </main>
+</div>
+
+<script>
+const LAYERS = __LAYERS__;
+const FLOORS = [
+  { id:"B1", name:"大廳・地下街",                key:"b1", M:[[1.2417,-0.0138,-115.49],[0.0138,1.2417,-339.12]], plate:[40,370,1405,1425] },
+  { id:"B2", name:"板南線大廳",                  key:"b2", M:[[1,0,15],[0,1,-44]] },
+  { id:"B3", name:"淡水信義線大廳・板南線月台", key:"b3", M:[[1,0,0],[0,1,0]] },
+  { id:"B4", name:"淡水信義線月台",              key:"b4", M:[[1,0,8],[0,1,11]] },
+];
+const ID = [[1,0,0],[0,1,0]];
+// elevator number -> stops [floorIndex, x, y] in that floor's own image pixels
+const ELEV = {
+  "1": [[1,988,1095],[2,1000,1043],[3,989,1040]],
+  "2": [[2,1082,726],[3,1078,707]],
+  "3": [[0,1041,600],[2,1188,385]],
+  "4": [[0,652,1305],[1,606,1358]],
+  "6": [[1,924,1348],[2,942,1312]],
+  "7": [[0,1071,1302],[1,1212,1340]],
+};
+// one segment per floor walked; `via` = elevator used to arrive on this floor
+const ROUTE = [
+  { f:0,           pts:[[820,1100],[835,1180],[830,1290],[652,1300]],              say:"從南一門走到 4 號電梯，搭電梯下到 B2" },
+  { f:1, via:"4",  pts:[[606,1358],[640,1338],[925,1330],[955,1250],[988,1095]],   say:"出電梯沿板南線大廳往東，走到 1 號電梯，搭到 B4" },
+  { f:3, via:"1",  pts:[[989,1040],[1030,960],[1075,760]],                          say:"出電梯往北走，就到淡水信義線月台" },
+];
+const PASS = { 2: "這層不用出電梯：1 號電梯從 B2 直達 B4" };
+const STEPS = [-1, ...ROUTE.map(s => s.f)];
+
+const cv = document.getElementById("cv"), ctx = cv.getContext("2d");
+const ui = id => document.getElementById(id);
+const imgs = {};
+const state = { focus:-1, gapAnim:null, anim:{ from:-1, to:-1, t0:0, dur:750 }, lastP:null };
+const FONT = '"Noto Sans TC","Microsoft JhengHei",sans-serif';
+
+const lerp = (a, b, t) => a + (b - a) * t;
+const ease = t => t < .5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2;
+function M(f) { return (f === 0 && !ui("alignB1").checked) ? ID : FLOORS[f].M; }
+function apply(m, x, y) { return [m[0][0]*x + m[0][1]*y + m[0][2], m[1][0]*x + m[1][1]*y + m[1][2]]; }
+function mul(a, b) { // a after b, both 2x3 affine
+  return [[a[0][0]*b[0][0]+a[0][1]*b[1][0], a[0][0]*b[0][1]+a[0][1]*b[1][1], a[0][0]*b[0][2]+a[0][1]*b[1][2]+a[0][2]],
+          [a[1][0]*b[0][0]+a[1][1]*b[1][0], a[1][0]*b[0][1]+a[1][1]*b[1][1], a[1][0]*b[0][2]+a[1][1]*b[1][2]+a[1][2]]];
+}
+function inv(m) {
+  const d = m[0][0]*m[1][1] - m[0][1]*m[1][0];
+  return [[ m[1][1]/d, -m[0][1]/d, (m[0][1]*m[1][2] - m[1][1]*m[0][2])/d],
+          [-m[1][0]/d,  m[0][0]/d, (m[1][0]*m[0][2] - m[0][0]*m[1][2])/d]];
+}
+function plateOf(f) { const b = FLOORS[f].plate || LAYERS[FLOORS[f].key].bbox, p = 18; return [b[0]-p, b[1]-p, b[2]+p, b[3]+p]; }
+const cornersOf = b => [[b[0],b[1]],[b[2],b[1]],[b[2],b[3]],[b[0],b[3]]];
+
+// view parameters for the overview (from the sliders) or for one flat floor
+function paramsOf(key) { return key < 0 ? { tilt:+ui("tilt").value/100, rot:+ui("rot").value, focus:-1 } : { tilt:1, rot:0, focus:key }; }
+
+// common frame (x,y) on level z -> screen pixels
+function base(v, z) {
+  const th = v.rot * Math.PI / 180, c = Math.cos(th), s = Math.sin(th), t = v.tilt, cx = 720, cy = 880;
+  return [[v.k*c,   -v.k*s,   v.ox - v.k*(c*cx - s*cy)],
+          [v.k*t*s,  v.k*t*c, v.oy + v.k*(z - 1.5)*v.gap - v.k*t*(s*cx + c*cy)]];
+}
+function fitFor(p, W, H, gap) {
+  const unit = { ...p, k:1, ox:0, oy:0, gap };
+  let mnx = 1e9, mny = 1e9, mxx = -1e9, mxy = -1e9;
+  for (const f of (p.focus < 0 ? [0,1,2,3] : [p.focus])) {
+    const T = mul(base(unit, f), M(f));
+    for (const [x, y] of cornersOf(plateOf(f))) {
+      const [u, w] = apply(T, x, y); mnx = Math.min(mnx,u); mxx = Math.max(mxx,u); mny = Math.min(mny,w); mxy = Math.max(mxy,w);
+    }
+  }
+  const dpr = window.devicePixelRatio || 1;
+  const pad = 0.06 * Math.min(W, H), labelW = Math.min(170 * dpr, W * 0.3), top = p.focus < 0 ? 0 : 70 * dpr;  // room for floor labels / caption
+  const k = Math.min((W - 2*pad - labelW) / (mxx - mnx), (H - 2*pad - top) / (mxy - mny));
+  return { k, ox:(W + labelW)/2 - k*(mnx + mxx)/2, oy:(H + top)/2 - k*(mny + mxy)/2 };
+}
+function projector(v) {
+  return {
+    T: f => mul(base(v, f), M(f)),
+    pt: (f, x, y) => apply(mul(base(v, f), M(f)), x, y),
+    along: (fa, pa, fb, pb, t) => { // point on the straight 3D line between two stops
+      const A = apply(M(fa), pa[0], pa[1]), B = apply(M(fb), pb[0], pb[1]);
+      return apply(base(v, fa + (fb - fa)*t), lerp(A[0], B[0], t), lerp(A[1], B[1], t)); },
+  };
+}
+// split a vertical link into one piece per floor gap, so each piece is drawn between the right layers
+function pieces(fa, pa, fb, pb) {
+  const out = []; if (fa === fb) return out;
+  for (let l = Math.min(fa,fb) + 1; l <= Math.max(fa,fb); l++) out.push({ below:l, t0:((l-1) - fa)/(fb - fa), t1:(l - fa)/(fb - fa), fa, pa, fb, pb });
+  return out;
+}
+
+let pending = false;
+function requestDraw() { if (!pending) { pending = true; requestAnimationFrame(() => { pending = false; draw(); }); } }
+
+function draw() {
+  const dpr = window.devicePixelRatio || 1;
+  const W = Math.round(cv.clientWidth * dpr), H = Math.round(cv.clientHeight * dpr);
+  if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+  ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,W,H);
+  ui("vGap").textContent = ui("gap").value; ui("vTilt").textContent = ui("tilt").value + "%"; ui("vRot").textContent = ui("rot").value + "°";
+
+  const an = state.anim, t = an.from === an.to ? 1 : Math.min(1, (performance.now() - an.t0) / an.dur), e = ease(t);
+  const A = paramsOf(an.from), B = paramsOf(an.to), target = Math.max(+ui("gap").value, 1);
+  const fa = fitFor(A, W, H, target), fb = fitFor(B, W, H, target);
+  const v = { tilt:lerp(A.tilt,B.tilt,e), rot:lerp(A.rot,B.rot,e), k:lerp(fa.k,fb.k,e), ox:lerp(fa.ox,fb.ox,e), oy:lerp(fa.oy,fb.oy,e),
+              gap: state.gapAnim ?? +ui("gap").value };
+  const P = projector(v); state.lastP = P;
+  const vis = f => lerp(A.focus < 0 || A.focus === f ? 1 : 0, B.focus < 0 || B.focus === f ? 1 : 0, e);
+  const single = lerp(A.focus < 0 ? 0 : 1, B.focus < 0 ? 0 : 1, e);   // 0 = overview, 1 = one flat floor
+  const solo = f => single * Math.max(0, 2*vis(f) - 1);                  // single-floor labels: only once that floor is mostly in view
+  const showElev = ui("showElev").checked, showRoute = ui("showRoute").checked;
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const cRoute = css("--route"), cElev = css("--elev");
+
+  const line = (pts, color, width, dash) => {
+    ctx.setTransform(1,0,0,1,0,0); ctx.beginPath(); pts.forEach(([x,y],i) => i ? ctx.lineTo(x,y) : ctx.moveTo(x,y));
+    ctx.strokeStyle = color; ctx.lineWidth = width; ctx.setLineDash(dash || []); ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.stroke(); ctx.setLineDash([]);
+  };
+  const dot = ([x,y], color, r) => { ctx.setTransform(1,0,0,1,0,0); ctx.beginPath(); ctx.arc(x,y,r,0,7); ctx.fillStyle = color; ctx.fill(); ctx.lineWidth = 2*dpr; ctx.strokeStyle = "#fff"; ctx.stroke(); };
+  const routeLine = pts => { line(pts, "rgba(255,255,255,.9)", 8*dpr); line(pts, cRoute, 4.5*dpr); };
+  const tag = ([x,y], text, color, al) => {
+    if (al <= 0.01) return;
+    ctx.globalAlpha = al; dot([x,y], color, 7*dpr);
+    ctx.font = `700 ${13*dpr}px ${FONT}`; const w = ctx.measureText(text).width + 18*dpr;
+    ctx.fillStyle = color; ctx.beginPath(); ctx.roundRect(x + 12*dpr, y - 13*dpr, w, 26*dpr, 13*dpr); ctx.fill();
+    ctx.fillStyle = "#fff"; ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.fillText(text, x + 21*dpr, y);
+    ctx.globalAlpha = 1;
+  };
+  const badge = ([x,y], no, al) => {
+    if (al <= 0.01) return;
+    ctx.setTransform(1,0,0,1,0,0); ctx.globalAlpha = al; ctx.font = `700 ${12*dpr}px system-ui,sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillStyle = cElev; ctx.beginPath(); ctx.roundRect(x - 11*dpr, y - 31*dpr, 22*dpr, 18*dpr, 4*dpr); ctx.fill();
+    ctx.fillStyle = "#fff"; ctx.fillText(no, x, y - 22*dpr); ctx.globalAlpha = 1;
+  };
+
+  const vert = { elev:[], route:[] };
+  for (const stops of Object.values(ELEV))
+    for (let i = 0; i + 1 < stops.length; i++) vert.elev.push(...pieces(stops[i][0], stops[i].slice(1), stops[i+1][0], stops[i+1].slice(1)));
+  for (let i = 0; i + 1 < ROUTE.length; i++) vert.route.push(...pieces(ROUTE[i].f, ROUTE[i].pts.at(-1), ROUTE[i+1].f, ROUTE[i+1].pts[0]));
+
+  for (let f = 3; f >= 0; f--) {
+    const al = vis(f);
+    if (al > 0.01) {
+      const T = P.T(f), b = plateOf(f), L = LAYERS[FLOORS[f].key];
+      const r = new Path2D(); r.rect(b[0], b[1], b[2]-b[0], b[3]-b[1]);
+      ctx.globalAlpha = al;
+      ctx.setTransform(T[0][0], T[1][0], T[0][1], T[1][1], T[0][2], T[1][2] + 9*dpr);   // slab shadow
+      ctx.fillStyle = "rgba(60,70,90,.22)"; ctx.fill(r);
+      ctx.setTransform(T[0][0], T[1][0], T[0][1], T[1][1], T[0][2], T[1][2]);
+      ctx.fillStyle = "rgba(255,255,255,.84)"; ctx.fill(r);
+      ctx.lineWidth = 1.5*dpr / v.k; ctx.strokeStyle = "rgba(60,70,90,.4)"; ctx.stroke(r);
+      ctx.save(); ctx.clip(r); ctx.drawImage(imgs[FLOORS[f].key], 0, 0, L.w, L.h); ctx.restore();   // clip off header-bar remnants
+      if (showElev) for (const stops of Object.values(ELEV)) for (const s of stops) if (s[0] === f) dot(P.pt(f, s[1], s[2]), cElev, 4.5*dpr);
+      if (showRoute) for (const seg of ROUTE) if (seg.f === f) routeLine(seg.pts.map(([x,y]) => P.pt(f, x, y)));
+      ctx.globalAlpha = 1;
+    }
+    // vertical links rising from this floor towards the one above (overview only)
+    const va = f > 0 ? Math.min(vis(f), vis(f-1)) * (1 - single) : 0;
+    if (va > 0.01) {
+      ctx.globalAlpha = va;
+      if (showElev) for (const p of vert.elev) if (p.below === f) line([P.along(p.fa,p.pa,p.fb,p.pb,p.t0), P.along(p.fa,p.pa,p.fb,p.pb,p.t1)], cElev, 2*dpr, [6*dpr, 5*dpr]);
+      if (showRoute) for (const p of vert.route) if (p.below === f) routeLine([P.along(p.fa,p.pa,p.fb,p.pb,p.t0), P.along(p.fa,p.pa,p.fb,p.pb,p.t1)]);
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  // floor labels beside each plate's left-most corner, drawn last so plates never cover them
+  ctx.setTransform(1,0,0,1,0,0);
+  for (let f = 0; f < 4; f++) {
+    const al = vis(f); if (al <= 0.01) continue;
+    const cs = cornersOf(plateOf(f)).map(([x,y]) => P.pt(f, x, y));
+    const left = single > 0.5 ? cs.reduce((m, c) => c[0] + c[1] < m[0] + m[1] ? c : m)    // flat: top-left corner
+                              : cs.reduce((m, c) => c[0] < m[0] - 0.5 ? c : m);            // overview: left-most corner
+    ctx.globalAlpha = al; ctx.textAlign = "right"; ctx.textBaseline = "middle";
+    ctx.fillStyle = "#1d2330"; ctx.font = `700 ${24*dpr}px ${FONT}`; ctx.fillText(FLOORS[f].id, left[0] - 14*dpr, left[1] - 11*dpr + 20*dpr*single);
+    ctx.fillStyle = "#667085"; ctx.font = `${12*dpr}px ${FONT}`; ctx.fillText(FLOORS[f].name, left[0] - 14*dpr, left[1] + 12*dpr + 20*dpr*single);
+  }
+  ctx.globalAlpha = 1;
+
+  if (showElev) for (const [no, stops] of Object.entries(ELEV)) {
+    badge(P.pt(stops[0][0], stops[0][1], stops[0][2]), no, (1 - single) * vis(stops[0][0]));       // overview: at the highest stop
+    for (const s of stops) badge(P.pt(s[0], s[1], s[2]), no, solo(s[0]));                            // single floor: every stop on it
+  }
+  if (showRoute) {
+    for (let i = 1; i < ROUTE.length; i++) {          // where you leave / arrive on each floor
+      const prev = ROUTE[i-1], cur = ROUTE[i];
+      tag(P.pt(prev.f, ...prev.pts.at(-1)), `搭電梯 ${cur.via} ↓ 往 ${FLOORS[cur.f].id}`, cElev, solo(prev.f));
+      tag(P.pt(cur.f, ...cur.pts[0]), `電梯 ${cur.via}・從 ${FLOORS[prev.f].id} 抵達`, cElev, solo(cur.f));
+    }
+    const s = ROUTE[0], end = ROUTE.at(-1);
+    tag(P.pt(s.f, ...s.pts[0]), "起點 南一門", cRoute, vis(s.f));
+    tag(P.pt(end.f, ...end.pts.at(-1)), "淡水信義線月台", cRoute, vis(end.f));
+    for (const [f, text] of Object.entries(PASS)) {   // floors the route passes without walking
+      const al = solo(+f); if (al <= 0.01) continue;
+      const b = plateOf(+f), [x, y] = P.pt(+f, (b[0]+b[2])/2, (b[1]+b[3])/2);
+      ctx.setTransform(1,0,0,1,0,0); ctx.globalAlpha = al; ctx.font = `700 ${15*dpr}px ${FONT}`;
+      const w = ctx.measureText(text).width + 32*dpr;
+      ctx.fillStyle = "#fff"; ctx.strokeStyle = cElev; ctx.lineWidth = 2*dpr; ctx.beginPath(); ctx.roundRect(x - w/2, y - 20*dpr, w, 40*dpr, 20*dpr); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = cElev; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(text, x, y); ctx.globalAlpha = 1;
+    }
+  }
+  if (t < 1) requestDraw();
+}
+
+function syncUI() {
+  const k = state.focus, i = STEPS.indexOf(k);
+  document.querySelectorAll("#chips button").forEach(b => b.setAttribute("aria-pressed", +b.dataset.f === k));
+  ui("sliders").classList.toggle("muted", k >= 0);
+  ui("stepLabel").textContent = k < 0 ? "總覽" : FLOORS[k].id + (i > 0 ? `（第 ${i} / ${STEPS.length - 1} 層）` : "（路線不經過）");
+  ui("prev").disabled = k === STEPS[0]; ui("next").disabled = k === STEPS.at(-1);
+  const seg = ROUTE.find(s => s.f === k);
+  ui("capFloor").textContent = k < 0 ? "" : FLOORS[k].id;
+  ui("capText").textContent = k < 0 ? "" : seg ? seg.say : (PASS[k] || "路線不經過這層");
+  ui("caption").classList.toggle("show", k >= 0);
+}
+function go(key) {
+  if (key === state.focus) return;
+  state.anim = { from:state.focus, to:key, t0:performance.now(), dur:750 };
+  state.focus = key; syncUI(); requestDraw();
+}
+function step(dir) {
+  const k = state.focus, i = STEPS.indexOf(k);
+  if (i >= 0) return go(STEPS[Math.max(0, Math.min(STEPS.length - 1, i + dir))]);
+  go(dir > 0 ? (STEPS.find(s => s > k) ?? STEPS.at(-1)) : ([...STEPS].reverse().find(s => s < k) ?? -1));
+}
+function play() {
+  if (state.focus >= 0) go(-1);
+  const target = +ui("gap").value, t0 = performance.now(), dur = 1400;
+  const tick = () => { const t = Math.min(1, (performance.now() - t0) / dur); state.gapAnim = target * (1 - Math.pow(1 - t, 3)); draw();
+    if (t < 1) requestAnimationFrame(tick); else { state.gapAnim = null; draw(); } };
+  requestAnimationFrame(tick);
+}
+function floorAt(clientX, clientY) {   // which plate is under the pointer in the overview (top floor wins)
+  if (state.focus >= 0 || !state.lastP) return null;
+  const r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1, x = (clientX - r.left) * dpr, y = (clientY - r.top) * dpr;
+  for (let f = 0; f < 4; f++) {
+    const [u, w] = apply(inv(state.lastP.T(f)), x, y), b = plateOf(f);
+    if (u >= b[0] && u <= b[2] && w >= b[1] && w <= b[3]) return f;
+  }
+  return null;
+}
+
+document.querySelectorAll("#chips button").forEach(b => b.addEventListener("click", () => go(+b.dataset.f)));
+["gap","tilt","rot","showElev","showRoute","alignB1"].forEach(id => ui(id).addEventListener("input", requestDraw));
+ui("play").addEventListener("click", play);
+ui("prev").addEventListener("click", () => step(-1));
+ui("next").addEventListener("click", () => step(1));
+cv.addEventListener("click", e => { const f = floorAt(e.clientX, e.clientY); if (f !== null) go(f); });
+cv.addEventListener("mousemove", e => { cv.style.cursor = floorAt(e.clientX, e.clientY) !== null ? "pointer" : "default"; });
+window.addEventListener("keydown", e => {
+  if (e.key === "ArrowRight") step(1); else if (e.key === "ArrowLeft") step(-1); else if (e.key === "Escape") go(-1);
+});
+window.addEventListener("resize", requestDraw);
+
+Promise.all(Object.entries(LAYERS).map(([k, L]) => new Promise(res => { const im = new Image(); im.onload = () => { imgs[k] = im; res(); }; im.src = L.uri; })))
+  .then(() => {
+    const m = location.hash.match(/^#f(\d)$/);   // #f0..#f3 opens one floor directly, #static skips the intro animation
+    if (m) { state.focus = +m[1]; state.anim = { from:state.focus, to:state.focus, t0:0, dur:1 }; }
+    syncUI();
+    const g = location.hash.match(/^#go(\d)$/);   // #go0..#go3: start at the overview, then animate into that floor
+    if (g) { draw(); go(+g[1]); }
+    else if (m || location.hash === "#static") draw(); else play();
+  });
+</script>
+</body>
+</html>

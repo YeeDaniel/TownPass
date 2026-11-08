@@ -1,3 +1,6 @@
+import 'package:permission_handler/permission_handler.dart';
+import 'package:town_pass/util/web_message_handler/camera_message_handler.dart';
+
 import 'dart:collection';
 
 import 'package:flutter/foundation.dart';
@@ -14,10 +17,7 @@ class WebViewArgument {
   final String? url;
   final String? forceTitle;
 
-  const WebViewArgument({
-    this.url,
-    this.forceTitle,
-  });
+  const WebViewArgument({this.url, this.forceTitle});
 }
 
 /// App 內開網頁使用，可使用 `openUrl` 並以 `url` 為參數帶入開啟網頁： \
@@ -29,10 +29,7 @@ class WebViewArgument {
 class TPWebView extends StatelessWidget {
   final TPAppBarController? titleController;
 
-  TPWebView({
-    super.key,
-    this.titleController,
-  });
+  TPWebView({super.key, this.titleController});
 
   String get url => (Get.arguments as WebViewArgument?)?.url ?? '';
 
@@ -40,9 +37,11 @@ class TPWebView extends StatelessWidget {
 
   final TPAppBarController _defaultTitleController = TPAppBarController();
 
-  TPAppBarController get appBarController => titleController ?? _defaultTitleController;
+  TPAppBarController get appBarController =>
+      titleController ?? _defaultTitleController;
 
-  final Rxn<InAppWebViewController> webViewController = Rxn<InAppWebViewController>();
+  final Rxn<InAppWebViewController> webViewController =
+      Rxn<InAppWebViewController>();
 
   final RxBool canGoBack = RxBool(false);
 
@@ -52,18 +51,28 @@ class TPWebView extends StatelessWidget {
       appBar: TPAppBar(
         backgroundColor: TPColors.primary500,
         foregroundColor: TPColors.white,
-        leading: Obx(
-          () => switch (canGoBack.value) {
-            true => IconButton(
-                icon: Assets.svg.expand.svg(),
-                onPressed: () async => await webViewController.value?.goBack(),
-                style: const ButtonStyle(
-                  iconSize: WidgetStatePropertyAll<double>(24),
-                ),
+        // Station guide has its own navigation flow; keep only the close action.
+        leading:
+            forceTitle == '北車好走' ||
+                Uri.tryParse(url)?.host == 'inside-ef271.web.app' ||
+                (Uri.tryParse(url)?.host
+                            .startsWith('inside-ef271--townpass-preview-') ==
+                        true &&
+                    Uri.tryParse(url)?.host.endsWith('.web.app') == true)
+            ? const SizedBox.shrink()
+            : Obx(
+                () => switch (canGoBack.value) {
+                  true => IconButton(
+                    icon: Assets.svg.expand.svg(),
+                    onPressed: () async =>
+                        await webViewController.value?.goBack(),
+                    style: const ButtonStyle(
+                      iconSize: WidgetStatePropertyAll<double>(24),
+                    ),
+                  ),
+                  false => const SizedBox.shrink(),
+                },
               ),
-            false => const SizedBox.shrink(),
-          },
-        ),
         actions: [
           CloseButton(
             color: TPColors.white,
@@ -77,6 +86,11 @@ class TPWebView extends StatelessWidget {
         controller: appBarController,
       ),
       body: TPInAppWebView(
+        onConsoleMessage: (_, message) {
+          if (kDebugMode && message.message.contains('[StationSpeech][diag-v1]')) {
+            debugPrint(message.message);
+          }
+        },
         onWebViewCreated: (controller) {
           webViewController.value = controller;
           try {
@@ -96,7 +110,38 @@ class TPWebView extends StatelessWidget {
         },
         onGeolocationPermissionsShowPrompt: (controller, origin) async {
           // should be deal individually (ask for user agreement)
-          return GeolocationPermissionShowPromptResponse(origin: origin, allow: true, retain: true);
+          return GeolocationPermissionShowPromptResponse(
+            origin: origin,
+            allow: true,
+            retain: true,
+          );
+        },
+        onPermissionRequest: (controller, request) async {
+          final origin = Uri.tryParse(request.origin.toString());
+          final current = Uri.tryParse(
+            (await controller.getUrl())?.toString() ?? '',
+          );
+          final cameraOnly =
+              request.resources.isNotEmpty &&
+              request.resources.every(
+                (r) => r == PermissionResourceType.CAMERA,
+              );
+          if (!StationCameraMessageHandler.trusted(origin) ||
+              !StationCameraMessageHandler.trusted(current) ||
+              current?.origin != origin?.origin ||
+              !cameraOnly) {
+            return PermissionResponse(
+              resources: request.resources,
+              action: PermissionResponseAction.DENY,
+            );
+          }
+          final permission = await StationCameraMessageHandler.requestCamera();
+          return PermissionResponse(
+            resources: request.resources,
+            action: permission.isGranted
+                ? PermissionResponseAction.GRANT
+                : PermissionResponseAction.DENY,
+          );
         },
         onCloseWindow: (_) => Get.back(),
       ),
@@ -121,60 +166,168 @@ class TPInAppWebView extends StatelessWidget {
   final ContextMenu? contextMenu;
   final Function(InAppWebViewController, WebUri?)? onPageCommitVisible;
   final Function(InAppWebViewController, String?)? onTitleChanged;
-  final Future<AjaxRequestAction> Function(InAppWebViewController, AjaxRequest)? onAjaxProgress;
-  final Future<AjaxRequestAction?> Function(InAppWebViewController, AjaxRequest)? onAjaxReadyStateChange;
+  final Future<AjaxRequestAction> Function(InAppWebViewController, AjaxRequest)?
+  onAjaxProgress;
+  final Future<AjaxRequestAction?> Function(
+    InAppWebViewController,
+    AjaxRequest,
+  )?
+  onAjaxReadyStateChange;
   final Function(InAppWebViewController, ConsoleMessage)? onConsoleMessage;
-  final Future<bool?> Function(InAppWebViewController, CreateWindowAction)? onCreateWindow;
+  final Future<bool?> Function(InAppWebViewController, CreateWindowAction)?
+  onCreateWindow;
   final Function(InAppWebViewController)? onCloseWindow;
   final Function(InAppWebViewController)? onWindowFocus;
   final Function(InAppWebViewController)? onWindowBlur;
-  final Function(InAppWebViewController, DownloadStartRequest)? onDownloadStartRequest;
-  final Future<JsAlertResponse?> Function(InAppWebViewController, JsAlertRequest)? onJsAlert;
-  final Future<JsConfirmResponse?> Function(InAppWebViewController, JsConfirmRequest)? onJsConfirm;
-  final Future<JsPromptResponse?> Function(InAppWebViewController, JsPromptRequest)? onJsPrompt;
-  final Function(InAppWebViewController, WebResourceRequest, WebResourceError)? onReceivedError;
-  final Function(InAppWebViewController, WebResourceRequest, WebResourceResponse)? onReceivedHttpError;
+  final Function(InAppWebViewController, DownloadStartRequest)?
+  onDownloadStartRequest;
+  final Future<JsAlertResponse?> Function(
+    InAppWebViewController,
+    JsAlertRequest,
+  )?
+  onJsAlert;
+  final Future<JsConfirmResponse?> Function(
+    InAppWebViewController,
+    JsConfirmRequest,
+  )?
+  onJsConfirm;
+  final Future<JsPromptResponse?> Function(
+    InAppWebViewController,
+    JsPromptRequest,
+  )?
+  onJsPrompt;
+  final Function(InAppWebViewController, WebResourceRequest, WebResourceError)?
+  onReceivedError;
+  final Function(
+    InAppWebViewController,
+    WebResourceRequest,
+    WebResourceResponse,
+  )?
+  onReceivedHttpError;
   final Function(InAppWebViewController, LoadedResource)? onLoadResource;
-  final Future<CustomSchemeResponse?> Function(InAppWebViewController, WebResourceRequest)? onLoadResourceWithCustomScheme;
+  final Future<CustomSchemeResponse?> Function(
+    InAppWebViewController,
+    WebResourceRequest,
+  )?
+  onLoadResourceWithCustomScheme;
   final Function(InAppWebViewController, WebUri?)? onLoadStart;
   final Function(InAppWebViewController, WebUri?)? onLoadStop;
-  final Function(InAppWebViewController, InAppWebViewHitTestResult)? onLongPressHitTestResult;
-  final Future<bool?> Function(InAppWebViewController, WebUri?, PlatformPrintJobController?)? onPrintRequest;
+  final Function(InAppWebViewController, InAppWebViewHitTestResult)?
+  onLongPressHitTestResult;
+  final Future<bool?> Function(
+    InAppWebViewController,
+    WebUri?,
+    PlatformPrintJobController?,
+  )?
+  onPrintRequest;
   final Function(InAppWebViewController, int)? onProgressChanged;
-  final Future<ClientCertResponse?> Function(InAppWebViewController, URLAuthenticationChallenge)? onReceivedClientCertRequest;
-  final Future<HttpAuthResponse?> Function(InAppWebViewController, URLAuthenticationChallenge)? onReceivedHttpAuthRequest;
-  final Future<ServerTrustAuthResponse?> Function(InAppWebViewController, URLAuthenticationChallenge)? onReceivedServerTrustAuthRequest;
+  final Future<ClientCertResponse?> Function(
+    InAppWebViewController,
+    URLAuthenticationChallenge,
+  )?
+  onReceivedClientCertRequest;
+  final Future<HttpAuthResponse?> Function(
+    InAppWebViewController,
+    URLAuthenticationChallenge,
+  )?
+  onReceivedHttpAuthRequest;
+  final Future<ServerTrustAuthResponse?> Function(
+    InAppWebViewController,
+    URLAuthenticationChallenge,
+  )?
+  onReceivedServerTrustAuthRequest;
   final Function(InAppWebViewController, int, int)? onScrollChanged;
-  final Function(InAppWebViewController, WebUri?, bool?)? onUpdateVisitedHistory;
+  final Function(InAppWebViewController, WebUri?, bool?)?
+  onUpdateVisitedHistory;
   final Function(InAppWebViewController)? onWebViewCreated;
-  final Future<AjaxRequest?> Function(InAppWebViewController, AjaxRequest)? shouldInterceptAjaxRequest;
-  final Future<FetchRequest?> Function(InAppWebViewController, FetchRequest)? shouldInterceptFetchRequest;
-  final Future<NavigationActionPolicy?> Function(InAppWebViewController, NavigationAction)? shouldOverrideUrlLoading;
+  final Future<AjaxRequest?> Function(InAppWebViewController, AjaxRequest)?
+  shouldInterceptAjaxRequest;
+  final Future<FetchRequest?> Function(InAppWebViewController, FetchRequest)?
+  shouldInterceptFetchRequest;
+  final Future<NavigationActionPolicy?> Function(
+    InAppWebViewController,
+    NavigationAction,
+  )?
+  shouldOverrideUrlLoading;
   final Function(InAppWebViewController)? onEnterFullscreen;
   final Function(InAppWebViewController)? onExitFullscreen;
   final Function(InAppWebViewController, int, int, bool, bool)? onOverScrolled;
   final Function(InAppWebViewController, double, double)? onZoomScaleChanged;
-  final Function(InAppWebViewController)? onDidReceiveServerRedirectForProvisionalNavigation;
-  final Future<FormResubmissionAction?> Function(InAppWebViewController, WebUri?)? onFormResubmission;
+  final Function(InAppWebViewController)?
+  onDidReceiveServerRedirectForProvisionalNavigation;
+  final Future<FormResubmissionAction?> Function(
+    InAppWebViewController,
+    WebUri?,
+  )?
+  onFormResubmission;
   final Function(InAppWebViewController)? onGeolocationPermissionsHidePrompt;
-  final Future<GeolocationPermissionShowPromptResponse?> Function(InAppWebViewController, String)? onGeolocationPermissionsShowPrompt;
-  final Future<JsBeforeUnloadResponse?> Function(InAppWebViewController, JsBeforeUnloadRequest)? onJsBeforeUnload;
-  final Future<NavigationResponseAction?> Function(InAppWebViewController, NavigationResponse)? onNavigationResponse;
-  final Future<PermissionResponse?> Function(InAppWebViewController, PermissionRequest)? onPermissionRequest;
+  final Future<GeolocationPermissionShowPromptResponse?> Function(
+    InAppWebViewController,
+    String,
+  )?
+  onGeolocationPermissionsShowPrompt;
+  final Future<JsBeforeUnloadResponse?> Function(
+    InAppWebViewController,
+    JsBeforeUnloadRequest,
+  )?
+  onJsBeforeUnload;
+  final Future<NavigationResponseAction?> Function(
+    InAppWebViewController,
+    NavigationResponse,
+  )?
+  onNavigationResponse;
+  final Future<PermissionResponse?> Function(
+    InAppWebViewController,
+    PermissionRequest,
+  )?
+  onPermissionRequest;
   final Function(InAppWebViewController, Uint8List)? onReceivedIcon;
   final Function(InAppWebViewController, LoginRequest)? onReceivedLoginRequest;
-  final Function(InAppWebViewController, PermissionRequest)? onPermissionRequestCanceled;
+  final Function(InAppWebViewController, PermissionRequest)?
+  onPermissionRequestCanceled;
   final Function(InAppWebViewController)? onRequestFocus;
   final Function(InAppWebViewController, WebUri, bool)? onReceivedTouchIconUrl;
-  final Function(InAppWebViewController, RenderProcessGoneDetail)? onRenderProcessGone;
-  final Future<WebViewRenderProcessAction?> Function(InAppWebViewController, WebUri?)? onRenderProcessResponsive;
-  final Future<WebViewRenderProcessAction?> Function(InAppWebViewController, WebUri?)? onRenderProcessUnresponsive;
-  final Future<SafeBrowsingResponse?> Function(InAppWebViewController, WebUri, SafeBrowsingThreat?)? onSafeBrowsingHit;
+  final Function(InAppWebViewController, RenderProcessGoneDetail)?
+  onRenderProcessGone;
+  final Future<WebViewRenderProcessAction?> Function(
+    InAppWebViewController,
+    WebUri?,
+  )?
+  onRenderProcessResponsive;
+  final Future<WebViewRenderProcessAction?> Function(
+    InAppWebViewController,
+    WebUri?,
+  )?
+  onRenderProcessUnresponsive;
+  final Future<SafeBrowsingResponse?> Function(
+    InAppWebViewController,
+    WebUri,
+    SafeBrowsingThreat?,
+  )?
+  onSafeBrowsingHit;
   final Function(InAppWebViewController)? onWebContentProcessDidTerminate;
-  final Future<ShouldAllowDeprecatedTLSAction?> Function(InAppWebViewController, URLAuthenticationChallenge)? shouldAllowDeprecatedTLS;
-  final Future<WebResourceResponse?> Function(InAppWebViewController, WebResourceRequest)? shouldInterceptRequest;
-  final Future<void> Function(InAppWebViewController, MediaCaptureState?, MediaCaptureState?)? onCameraCaptureStateChanged;
-  final Future<void> Function(InAppWebViewController, MediaCaptureState?, MediaCaptureState?)? onMicrophoneCaptureStateChanged;
+  final Future<ShouldAllowDeprecatedTLSAction?> Function(
+    InAppWebViewController,
+    URLAuthenticationChallenge,
+  )?
+  shouldAllowDeprecatedTLS;
+  final Future<WebResourceResponse?> Function(
+    InAppWebViewController,
+    WebResourceRequest,
+  )?
+  shouldInterceptRequest;
+  final Future<void> Function(
+    InAppWebViewController,
+    MediaCaptureState?,
+    MediaCaptureState?,
+  )?
+  onCameraCaptureStateChanged;
+  final Future<void> Function(
+    InAppWebViewController,
+    MediaCaptureState?,
+    MediaCaptureState?,
+  )?
+  onMicrophoneCaptureStateChanged;
 
   const TPInAppWebView({
     super.key,
@@ -254,7 +407,9 @@ class TPInAppWebView extends StatelessWidget {
   Widget build(BuildContext context) {
     return InAppWebView(
       onWebViewCreated: (controller) async {
-        await controller.addWebMessageListener(TPWebMessageListener.webMessageListener());
+        await controller.addWebMessageListener(
+          TPWebMessageListener.webMessageListener(),
+        );
         onWebViewCreated?.call(controller);
       },
       gestureRecognizers: gestureRecognizers,
@@ -305,7 +460,8 @@ class TPInAppWebView extends StatelessWidget {
       onExitFullscreen: onExitFullscreen,
       onOverScrolled: onOverScrolled,
       onZoomScaleChanged: onZoomScaleChanged,
-      onDidReceiveServerRedirectForProvisionalNavigation: onDidReceiveServerRedirectForProvisionalNavigation,
+      onDidReceiveServerRedirectForProvisionalNavigation:
+          onDidReceiveServerRedirectForProvisionalNavigation,
       onFormResubmission: onFormResubmission,
       onGeolocationPermissionsHidePrompt: onGeolocationPermissionsHidePrompt,
       onGeolocationPermissionsShowPrompt: onGeolocationPermissionsShowPrompt,

@@ -76,7 +76,7 @@
 			<string>TownPass 需要精確定位權限才可正常使用</string>
 		</dict>
 		<key>NSCameraUsageDescription</key>
-        <string>This app needs camera access to scan QR codes</string>
+        <string>使用相機進行 QR Code 掃描及站內 AR 導航；不錄音、不上傳相機畫面。</string>
         <key>NSPhotoLibraryUsageDescription</key>
         <string>This app needs photos access to get QR code from photo library</string>
 		<key>UIStatusBarHidden</key>

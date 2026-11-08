@@ -29,6 +29,7 @@ enum MyServiceItemId {
   library,
   locationSearch,
   zoo,
+  stationPhotoGuide,
   ;
 }
 
@@ -175,6 +176,14 @@ extension MyServiceIdExt on MyServiceItemId {
           icon: Assets.svg.iconLocationSearch24.svg(),
           category: MyServiceCategory.explore,
           destinationUrl: 'https://taipei-pass-service.vercel.app/surrounding-service/',
+        ),
+      MyServiceItemId.stationPhotoGuide => MyServiceItem(
+          title: '北車好走',
+          description: '看照片、聽指引，找到北車目的地',
+          icon: const SvgGenImage('assets/svg/icon_tamsui_xinyi_24.svg').svg(),
+          category: MyServiceCategory.explore,
+          destinationUrl: 'https://inside-ef271.web.app/',
+          forceWebViewTitle: '北車好走',
         ),
       MyServiceItemId.zoo => MyServiceItem(
           title: '愛遊動物園',
